@@ -11,7 +11,7 @@ public partial class BaboPlugin : BasePlugin
 {
     private bool isPractice = false;
     public override string ModuleName => "BaboPlugin";
-    public override string ModuleVersion => "1.0.8";
+    public override string ModuleVersion => "1.0.9";
     public override string ModuleAuthor => "Babo";
     public override string ModuleDescription => "BaboPlugin";
 
@@ -114,7 +114,6 @@ public partial class BaboPlugin : BasePlugin
         return HookResult.Continue;
     }
 
-    // No css_* console commands registered - only .prac / .warmup / .live in chat (no !)
 
     private static void ExecuteConfig(string configFile)
     {
