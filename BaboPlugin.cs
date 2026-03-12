@@ -11,7 +11,7 @@ public partial class BaboPlugin : BasePlugin
 {
     private bool isPractice = false;
     public override string ModuleName => "BaboPlugin";
-    public override string ModuleVersion => "1.0.7";
+    public override string ModuleVersion => "1.0.8";
     public override string ModuleAuthor => "Babo";
     public override string ModuleDescription => "BaboPlugin";
 
@@ -114,49 +114,7 @@ public partial class BaboPlugin : BasePlugin
         return HookResult.Continue;
     }
 
-    [ConsoleCommand("css_prac", "Loads cfg/BaboPlugin/prac.cfg")]
-    public void OnPracCommand(CCSPlayerController? player, CommandInfo info)
-    {
-        if (player != null && !IsAdmin(player))
-        {
-            player.PrintToChat(" \x04[BaboPlugin]\x01 You are not allowed to use this command.");
-            return;
-        }
-        ResetReadyPlayers();
-        ExecuteConfig("prac.cfg");
-        Server.PrintToChatAll(" \x04[BaboPlugin]\x01 Practice config loaded.");
-    }
-
-    [ConsoleCommand("css_warmup", "Loads cfg/BaboPlugin/warmup.cfg")]
-    public void OnWarmupCommand(CCSPlayerController? player, CommandInfo info)
-    {
-        if (player != null && !IsAdmin(player))
-        {
-            player.PrintToChat(" \x04[BaboPlugin]\x01 You are not allowed to use this command.");
-            return;
-        }
-        ResetReadyPlayers();
-        ExecuteConfig("warmup.cfg");
-        Server.PrintToChatAll(" \x04[BaboPlugin]\x01 Warmup config loaded.");
-    }
-
-    [ConsoleCommand("css_live", "Loads cfg/BaboPlugin/live.cfg")]
-    public void OnLiveCommand(CCSPlayerController? player, CommandInfo info)
-    {
-        if (player != null && !IsAdmin(player))
-        {
-            player.PrintToChat(" \x04[BaboPlugin]\x01 You are not allowed to use this command.");
-            return;
-        }
-        if (player != null && !AreAllConnectedPlayersReady(out var readyCount, out var totalCount))
-        {
-            player.PrintToChat($" \x04[BaboPlugin]\x01 Cannot start live. Ready: {readyCount}/{totalCount}. Players must type .ready");
-            return;
-        }
-        ResetReadyPlayers();
-        ExecuteConfig("live.cfg");
-        Server.PrintToChatAll(" \x04[BaboPlugin]\x01 Live config loaded.");
-    }
+    // No css_* console commands registered - only .prac / .warmup / .live in chat (no !)
 
     private static void ExecuteConfig(string configFile)
     {
@@ -246,8 +204,7 @@ public partial class BaboPlugin : BasePlugin
             );
         }
 
-    [ConsoleCommand("css_god", "Sets Infinite health for player")]
-        public void HandleGodCommand(CCSPlayerController? player)
+    private void HandleGodCommand(CCSPlayerController? player)
         {
             if (!isPractice || player == null || !IsPlayerValid(player)) return;
 	    
