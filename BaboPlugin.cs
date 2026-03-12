@@ -10,7 +10,7 @@ namespace BaboPlugin;
 public partial class BaboPlugin : BasePlugin
 {
     public override string ModuleName => "BaboPlugin";
-    public override string ModuleVersion => "1.0.4";
+    public override string ModuleVersion => "1.0.5";
     public override string ModuleAuthor => "Babo";
     public override string ModuleDescription => "BaboPlugin";
 
