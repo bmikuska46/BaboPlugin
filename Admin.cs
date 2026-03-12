@@ -1,5 +1,6 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Entities;
 using System.Text.Json;
 
 namespace BaboPlugin;
@@ -79,23 +80,14 @@ public partial class BaboPlugin
         }
     }
 
-    public bool IsAdmin(CCSPlayerController? player)
-    {
-        if (player == null || !player.IsValid || player.AuthorizedSteamID == null)
+   
+     private bool IsAdmin(CCSPlayerController? player)
         {
+           
+            if (player == null) return true; // Sent via server, hence should be treated as an admin.
+            if (loadedAdmins.ContainsKey(player.SteamID.ToString())) return true; // Admin exists in admins.json of MatchZy
             return false;
         }
-
-        string playerSteamId = player.AuthorizedSteamID.ToString();
-        string normalizedPlayer = NormalizeSteamId(playerSteamId);
-        if (string.IsNullOrEmpty(normalizedPlayer))
-        {
-            return false;
-        }
-
-        return loadedAdmins.Keys.Any(key =>
-            string.Equals(NormalizeSteamId(key), normalizedPlayer, StringComparison.Ordinal));
-    }
 
     private static string NormalizeSteamId(string? steamId)
     {
