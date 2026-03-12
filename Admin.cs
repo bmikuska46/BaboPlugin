@@ -86,7 +86,23 @@ public partial class BaboPlugin
             return false;
         }
 
-        string steamId = player.AuthorizedSteamID.ToString();
-        return loadedAdmins.ContainsKey(steamId);
+        string playerSteamId = player.AuthorizedSteamID.ToString();
+        string normalizedPlayer = NormalizeSteamId(playerSteamId);
+        if (string.IsNullOrEmpty(normalizedPlayer))
+        {
+            return false;
+        }
+
+        return loadedAdmins.Keys.Any(key =>
+            string.Equals(NormalizeSteamId(key), normalizedPlayer, StringComparison.Ordinal));
+    }
+
+    private static string NormalizeSteamId(string? steamId)
+    {
+        if (string.IsNullOrWhiteSpace(steamId))
+        {
+            return string.Empty;
+        }
+        return new string(steamId.Where(char.IsDigit).ToArray());
     }
 }
