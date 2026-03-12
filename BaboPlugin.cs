@@ -10,7 +10,7 @@ namespace BaboPlugin;
 public partial class BaboPlugin : BasePlugin
 {
     public override string ModuleName => "BaboPlugin";
-    public override string ModuleVersion => "1.0.5";
+    public override string ModuleVersion => "1.0.6";
     public override string ModuleAuthor => "Babo";
     public override string ModuleDescription => "BaboPlugin";
 
@@ -202,6 +202,6 @@ public partial class BaboPlugin : BasePlugin
         }
 
         Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {caller.PlayerName} changed map to {mapName}.");
-        Server.ExecuteCommand($"changelevel {mapName}");
+        Server.ExecuteCommand($"map {mapName}");
     }
 }
