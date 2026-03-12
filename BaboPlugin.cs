@@ -9,8 +9,9 @@ namespace BaboPlugin;
 
 public partial class BaboPlugin : BasePlugin
 {
+    private bool isPractice = false;
     public override string ModuleName => "BaboPlugin";
-    public override string ModuleVersion => "1.0.6";
+    public override string ModuleVersion => "1.0.7";
     public override string ModuleAuthor => "Babo";
     public override string ModuleDescription => "BaboPlugin";
 
@@ -37,7 +38,8 @@ public partial class BaboPlugin : BasePlugin
             text == ".warmup" ||
             text == ".live" ||
             text.StartsWith(".move ") ||
-            text.StartsWith(".map");
+            text.StartsWith(".map") ||
+            text == ".god";
 
         if (text == ".ready")
         {
@@ -59,6 +61,7 @@ public partial class BaboPlugin : BasePlugin
 
         if (text == ".prac")
         {
+            isPractice = true;
             ResetReadyPlayers();
             ExecuteConfig("prac.cfg");
             Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {player.PlayerName} loaded practice config.");
@@ -67,6 +70,7 @@ public partial class BaboPlugin : BasePlugin
 
         if (text == ".warmup")
         {
+            isPractice = true;
             ResetReadyPlayers();
             ExecuteConfig("warmup.cfg");
             Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {player.PlayerName} loaded warmup config.");
@@ -74,12 +78,13 @@ public partial class BaboPlugin : BasePlugin
         }
 
         if (text == ".live")
-        {
+        {   
             if (!AreAllConnectedPlayersReady(out var readyCount, out var totalCount))
             {
                 player.PrintToChat($" \x04[BaboPlugin]\x01 Cannot start live. Ready: {readyCount}/{totalCount}. Players must type .ready");
                 return HookResult.Continue;
             }
+            isPractice = false;
 
             ResetReadyPlayers();
             ExecuteConfig("live.cfg");
@@ -95,7 +100,14 @@ public partial class BaboPlugin : BasePlugin
 
         if (text.StartsWith(".map"))
         {
+            isPractice = false;
             HandleMapCommand(player, rawText);
+            return HookResult.Continue;
+        }
+
+        if (text == ".god")
+        {
+            HandleGodCommand(player);
             return HookResult.Continue;
         }
 
@@ -204,4 +216,56 @@ public partial class BaboPlugin : BasePlugin
         Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {caller.PlayerName} changed map to {mapName}.");
         Server.ExecuteCommand($"map {mapName}");
     }
+
+    private void ReplyToUserCommand(CCSPlayerController? player, string message, bool console = false)
+        {
+            if (player == null)
+            {
+                Server.PrintToConsole($" \x04[BaboPlugin]\x01 {message}");
+            }
+            else
+            {
+                if (console)
+                {
+                    player.PrintToConsole($" \x04[BaboPlugin]\x01 {message}");
+                }
+                else
+                {
+                    player.PrintToChat($" \x04[BaboPlugin]\x01 {message}");
+                }
+            }
+        }
+
+          public bool IsPlayerValid(CCSPlayerController? player)
+        {
+            return (
+                player != null &&
+                player.IsValid &&
+                player.PlayerPawn.IsValid &&
+                player.PlayerPawn.Value != null
+            );
+        }
+
+    [ConsoleCommand("css_god", "Sets Infinite health for player")]
+        public void HandleGodCommand(CCSPlayerController? player)
+        {
+            if (!isPractice || player == null || !IsPlayerValid(player)) return;
+	    
+			int currentHP = player!.PlayerPawn!.Value!.Health;
+			
+			if(currentHP > 100)
+			{
+				player.PlayerPawn.Value.Health = 100;
+				// ReplyToUserCommand(player, $"God mode disabled!");
+                		ReplyToUserCommand(player, "God mode disabled!");
+				return;
+			}
+			else
+			{
+				player.PlayerPawn.Value.Health = 2147483647; // max 32bit int
+				// ReplyToUserCommand(player, $"God mode enabled!");
+                		ReplyToUserCommand(player, "God mode enabled!");
+				return;
+			}
+        }
 }
