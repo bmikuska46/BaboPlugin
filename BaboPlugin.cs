@@ -1,4 +1,4 @@
-﻿using CounterStrikeSharp.API;
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
@@ -10,8 +10,9 @@ namespace BaboPlugin;
 public partial class BaboPlugin : BasePlugin
 {
     private bool isPractice = false;
+    private bool isLive = false;
     public override string ModuleName => "BaboPlugin";
-    public override string ModuleVersion => "1.0.9";
+    public override string ModuleVersion => "1.0.10";
     public override string ModuleAuthor => "Babo";
     public override string ModuleDescription => "BaboPlugin";
 
@@ -53,6 +54,12 @@ public partial class BaboPlugin : BasePlugin
             return HookResult.Continue;
         }
 
+        if (text == ".pause" || text == ".unpause")
+        {
+            HandlePauseCommand(player, text == ".pause");
+            return HookResult.Continue;
+        }
+
         if (isRestrictedCommand && !IsAdmin(player))
         {
             player.PrintToChat(" \x04[BaboPlugin]\x01 You are not allowed to use this command.");
@@ -62,6 +69,7 @@ public partial class BaboPlugin : BasePlugin
         if (text == ".prac")
         {
             isPractice = true;
+            isLive = false;
             ResetReadyPlayers();
             ExecuteConfig("prac.cfg");
             Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {player.PlayerName} loaded practice config.");
@@ -71,6 +79,7 @@ public partial class BaboPlugin : BasePlugin
         if (text == ".warmup")
         {
             isPractice = true;
+            isLive = false;
             ResetReadyPlayers();
             ExecuteConfig("warmup.cfg");
             Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {player.PlayerName} loaded warmup config.");
@@ -85,6 +94,7 @@ public partial class BaboPlugin : BasePlugin
                 return HookResult.Continue;
             }
             isPractice = false;
+            isLive = true;
 
             ResetReadyPlayers();
             ExecuteConfig("live.cfg");
@@ -101,6 +111,7 @@ public partial class BaboPlugin : BasePlugin
         if (text.StartsWith(".map"))
         {
             isPractice = false;
+            isLive = false;
             HandleMapCommand(player, rawText);
             return HookResult.Continue;
         }
@@ -118,6 +129,26 @@ public partial class BaboPlugin : BasePlugin
     private static void ExecuteConfig(string configFile)
     {
         Server.ExecuteCommand($"exec BaboPlugin/{configFile}");
+    }
+
+    private void HandlePauseCommand(CCSPlayerController player, bool pause)
+    {
+        if (!isLive)
+        {
+            player.PrintToChat(" \x04[BaboPlugin]\x01 Pause is only available during live mode.");
+            return;
+        }
+
+        if (pause)
+        {
+            Server.ExecuteCommand("mp_pause_match 1");
+            Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {player.PlayerName} paused the match.");
+        }
+        else
+        {
+            Server.ExecuteCommand("mp_pause_match 0");
+            Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {player.PlayerName} unpaused the match.");
+        }
     }
 
     private static void HandleMoveCommand(CCSPlayerController caller, string rawText)
