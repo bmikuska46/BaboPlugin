@@ -152,8 +152,8 @@ namespace BaboPlugin
                             int targetHP = targetController.PlayerPawn.Value.Health < 0 ? 0 : targetController.PlayerPawn.Value.Health;
                             string targetName = targetController.PlayerName;
 
-                            PrintToPlayerChat(attackerController, $"{ChatColors.Green}To: [{damageGiven} / {hitsGiven} hits | HE {heGiven} | Molly {molotovGiven} | Flash {flashGiven} ({flashDurationGiven:0.0}s)] From: [{damageTaken} / {hitsTaken} hits | HE {heTaken} | Molly {molotovTaken} | Flash {flashTaken} ({flashDurationTaken:0.0}s)] - {targetName} - ({targetHP} hp){ChatColors.Default}");
-                            PrintToPlayerChat(targetController, $"{ChatColors.Green}To: [{damageTaken} / {hitsTaken} hits | HE {heTaken} | Molly {molotovTaken} | Flash {flashTaken} ({flashDurationTaken:0.0}s)] From: [{damageGiven} / {hitsGiven} hits | HE {heGiven} | Molly {molotovGiven} | Flash {flashGiven} ({flashDurationGiven:0.0}s)] - {attackerName} - ({attackerHP} hp){ChatColors.Default}");
+                            ReplyToUserCommand(attackerController, $"{ChatColors.Green}To: [{damageGiven} / {hitsGiven} hits | HE {heGiven} | Molly {molotovGiven} | Flash {flashGiven} ({flashDurationGiven:0.0}s)] From: [{damageTaken} / {hitsTaken} hits | HE {heTaken} | Molly {molotovTaken} | Flash {flashTaken} ({flashDurationTaken:0.0}s)] - {targetName} - ({targetHP} hp){ChatColors.Default}");
+                            ReplyToUserCommand(targetController, $"{ChatColors.Green}To: [{damageTaken} / {hitsTaken} hits | HE {heTaken} | Molly {molotovTaken} | Flash {flashTaken} ({flashDurationTaken:0.0}s)] From: [{damageGiven} / {hitsGiven} hits | HE {heGiven} | Molly {molotovGiven} | Flash {flashGiven} ({flashDurationGiven:0.0}s)] - {attackerName} - ({attackerHP} hp){ChatColors.Default}");
                         }
 
                         // Mark this pair as processed to avoid duplicates.
@@ -164,7 +164,7 @@ namespace BaboPlugin
             }
             catch (Exception e)
             {
-                Log($"[ShowDamageInfo FATAL] An error occurred: {e.Message}");
+                Server.PrintToConsole($"[ShowDamageInfo FATAL] An error occurred: {e.Message}");
             }
 
         }
