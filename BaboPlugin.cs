@@ -1,4 +1,4 @@
-using CounterStrikeSharp.API;
+﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
@@ -200,9 +200,11 @@ public partial class BaboPlugin : BasePlugin
             caller.PrintToChat(" \x04[BaboPlugin]\x01 Invalid map name.");
             return;
         }
+        var isValidMap = mapName.StartsWith("de_") || mapName.StartsWith("cs_");
+
 
         Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {caller.PlayerName} changed map to {mapName}.");
-        Server.ExecuteCommand($"map {mapName}");
+        Server.ExecuteCommand($"map {(isValidMap ? mapName : "de_" + mapName)}");
     }
 
     private void ReplyToUserCommand(CCSPlayerController? player, string message, bool console = false)
