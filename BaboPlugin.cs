@@ -1,4 +1,4 @@
-﻿using CounterStrikeSharp.API;
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
@@ -14,7 +14,7 @@ public partial class BaboPlugin : BasePlugin
     private bool isLive = false;
 
 
-    private record Position(Vector PlayerPosition, QAngle PlayerAngle);
+    public record Position(Vector PlayerPosition, QAngle PlayerAngle);
      public Dictionary<byte, List<Position>> spawnsData = GetEmptySpawnsData();
 
    public static Dictionary<byte, List<Position>> GetEmptySpawnsData()
