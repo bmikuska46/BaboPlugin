@@ -1,4 +1,4 @@
-using CounterStrikeSharp.API;
+﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
@@ -17,15 +17,17 @@ public partial class BaboPlugin : BasePlugin
     private Dictionary<byte, List<Position>> spawnsData = new();
 
     private record Position(Vector PlayerPosition, QAngle PlayerAngle);
+     public Dictionary<byte, List<Position>> spawnsData = GetEmptySpawnsData();
 
-    private static Dictionary<byte, List<Position>> GetEmptySpawnsData()
-    {
-        return new Dictionary<byte, List<Position>>
+   public static Dictionary<byte, List<Position>> GetEmptySpawnsData()
         {
-            [(byte)CsTeam.CounterTerrorist] = new List<Position>(),
-            [(byte)CsTeam.Terrorist] = new List<Position>()
-        };
-    }
+            return new Dictionary<byte, List<Position>>
+            {
+                { (byte)CsTeam.CounterTerrorist, new List<Position>() },
+                { (byte)CsTeam.Terrorist, new List<Position>() }
+            };
+        }
+        
     public override string ModuleName => "BaboPlugin";
     public override string ModuleVersion => "1.0.14";
     public override string ModuleAuthor => "Babo";
@@ -39,43 +41,39 @@ public partial class BaboPlugin : BasePlugin
     }
 
     public void GetSpawns()
-    {
-        spawnsData = GetEmptySpawnsData();
-
-        int minPriority = int.MaxValue;
-
-        var spawnsct = Utilities.FindAllEntitiesByDesignerName<CBaseEntity>("info_player_counterterrorist");
-        foreach (var spawn in spawnsct)
         {
-            if (!spawn.IsValid) continue;
-            int priority = 0;
-            try { priority = spawn.GetProperty<int>("m_iPriority"); } catch { }
-            if (priority < minPriority)
-                minPriority = priority;
-        }
-        if (minPriority == int.MaxValue)
-            minPriority = 0;
+            // Resetting spawn data to avoid any glitches
+            spawnsData = GetEmptySpawnsData();
 
-        foreach (var spawn in spawnsct)
-        {
-            if (!spawn.IsValid || spawn.AbsOrigin == null || spawn.AbsRotation == null) continue;
-            int priority = 0;
-            try { priority = spawn.GetProperty<int>("m_iPriority"); } catch { }
-            if (priority == minPriority)
-                spawnsData[(byte)CsTeam.CounterTerrorist].Add(new Position(spawn.AbsOrigin, spawn.AbsRotation));
-        }
+            int minPriority = 1;
 
-        var spawnst = Utilities.FindAllEntitiesByDesignerName<CBaseEntity>("info_player_terrorist");
-        foreach (var spawn in spawnst)
-        {
-            if (!spawn.IsValid || spawn.AbsOrigin == null || spawn.AbsRotation == null) continue;
-            int priority = 0;
-            try { priority = spawn.GetProperty<int>("m_iPriority"); } catch { }
-            if (priority == minPriority)
-                spawnsData[(byte)CsTeam.Terrorist].Add(new Position(spawn.AbsOrigin, spawn.AbsRotation));
-        }
+            var spawnsct = Utilities.FindAllEntitiesByDesignerName<SpawnPoint>("info_player_counterterrorist");
+            foreach (var spawn in spawnsct)
+            {
+                if (spawn.IsValid && spawn.Enabled && spawn.Priority < minPriority)
+                {
+                    minPriority = spawn.Priority;
+                }
+            }
 
-    }
+            foreach (var spawn in spawnsct)
+            {
+                if (spawn.IsValid && spawn.Enabled && spawn.Priority == minPriority)
+                {
+                    spawnsData[(byte)CsTeam.CounterTerrorist].Add(new Position(spawn.CBodyComponent?.SceneNode?.AbsOrigin!, spawn.CBodyComponent?.SceneNode?.AbsRotation!));
+                }
+            }
+
+            var spawnst = Utilities.FindAllEntitiesByDesignerName<SpawnPoint>("info_player_terrorist");
+            foreach (var spawn in spawnst)
+            {
+                if (spawn.IsValid && spawn.Enabled && spawn.Priority == minPriority)
+                {
+                    spawnsData[(byte)CsTeam.Terrorist].Add(new Position(spawn.CBodyComponent?.SceneNode?.AbsOrigin!, spawn.CBodyComponent?.SceneNode?.AbsRotation!));
+                }
+            }
+
+        }
 
 
     [GameEventHandler]
