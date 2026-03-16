@@ -35,10 +35,12 @@ public partial class BaboPlugin
         RefreshPlayerData();
 
         var target = @event.Userid;
-        if (!IsPlayerValid(target) || target!.UserId == null)
+        var attacker = @event.Attacker;
+        if (!IsPlayerValid(target) || target!.UserId == null || !IsPlayerValid(attacker) || attacker!.UserId == null)
         {
             return HookResult.Continue;
         }
+        if (target.UserId == attacker.UserId) return HookResult.Continue;
 
         UpdatePlayerDamageInfo(@event, (int)target.UserId);
         return HookResult.Continue;
@@ -51,10 +53,12 @@ public partial class BaboPlugin
         RefreshPlayerData();
 
         var target = @event.Userid;
-        if (!IsPlayerValid(target) || target!.UserId == null)
+        var attacker = @event.Attacker;
+        if (!IsPlayerValid(target) || target!.UserId == null || !IsPlayerValid(attacker) || attacker!.UserId == null)
         {
             return HookResult.Continue;
         }
+        if (target.UserId == attacker.UserId) return HookResult.Continue;
 
         UpdatePlayerFlashInfo(@event, (int)target.UserId);
         return HookResult.Continue;

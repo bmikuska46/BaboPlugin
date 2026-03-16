@@ -44,43 +44,35 @@ namespace BaboPlugin
 		private void UpdatePlayerDamageInfo(EventPlayerHurt @event, int targetId)
 		{
             CCSPlayerController? attacker = @event.Attacker;
-
             if (!IsPlayerValid(attacker)) return;
-			int attackerId = (int)attacker!.UserId!;
-			if (!playerDamageInfo.TryGetValue(attackerId, out var attackerInfo))
-				playerDamageInfo[attackerId] = attackerInfo = new Dictionary<int, DamagePlayerInfo>();
+            if (@event.DmgHealth <= 0) return;
 
-			if (!attackerInfo.TryGetValue(targetId, out var targetInfo))
-				attackerInfo[targetId] = targetInfo = new DamagePlayerInfo();
-
-			targetInfo.DamageHP += @event.DmgHealth;
-			targetInfo.Hits++;
-
-            var weapon = (@event.Weapon ?? string.Empty).ToLowerInvariant();
-            if (IsHeGrenadeWeapon(weapon))
+            if (!playerData.TryGetValue(targetId, out var targetController) || !IsPlayerValid(targetController))
             {
-                targetInfo.Grenades.HeDamage += @event.DmgHealth;
+                return;
             }
-            else if (IsMolotovWeapon(weapon))
-            {
-                targetInfo.Grenades.MolotovDamage += @event.DmgHealth;
-            }
+
+            string targetName = targetController.PlayerName;
+            string rawWeapon = (@event.Weapon ?? "unknown").Trim();
+            string weapon = rawWeapon.Length == 0 ? "unknown" : rawWeapon;
+
+            ReplyToUserCommand(attacker, $"{ChatColors.Green}You dealt {@event.DmgHealth} damage to {targetName} with {weapon}.{ChatColors.Default}");
 		}
 
         private void UpdatePlayerFlashInfo(EventPlayerBlind @event, int targetId)
         {
             CCSPlayerController? attacker = @event.Attacker;
             if (!IsPlayerValid(attacker)) return;
+            float flashDuration = Math.Max(0f, @event.BlindDuration);
+            if (flashDuration <= 0f) return;
 
-            int attackerId = (int)attacker!.UserId!;
-            if (!playerDamageInfo.TryGetValue(attackerId, out var attackerInfo))
-                playerDamageInfo[attackerId] = attackerInfo = new Dictionary<int, DamagePlayerInfo>();
+            if (!playerData.TryGetValue(targetId, out var targetController) || !IsPlayerValid(targetController))
+            {
+                return;
+            }
 
-            if (!attackerInfo.TryGetValue(targetId, out var targetInfo))
-                attackerInfo[targetId] = targetInfo = new DamagePlayerInfo();
-
-            targetInfo.Grenades.Flashes++;
-            targetInfo.Grenades.FlashDurationSeconds += Math.Max(0f, @event.BlindDuration);
+            string targetName = targetController.PlayerName;
+            ReplyToUserCommand(attacker, $"{ChatColors.Green}You flashed {targetName} for {flashDuration:0.0}s.{ChatColors.Default}");
         }
 
         private static bool IsHeGrenadeWeapon(string weapon)
@@ -96,76 +88,7 @@ namespace BaboPlugin
         private void ShowDamageInfo()
         {
             if (!enableDamageReport) return;
-            try
-            {
-                HashSet<(int, int)> processedPairs = new HashSet<(int, int)>();
-
-                foreach (var entry in playerDamageInfo)
-                {
-                    int attackerId = entry.Key;
-                    foreach (var (targetId, targetEntry) in entry.Value)
-                    {
-                        if (processedPairs.Contains((attackerId, targetId)) || processedPairs.Contains((targetId, attackerId)))
-                            continue;
-
-                        // Access and use the damage information as needed.
-                        int damageGiven = targetEntry.DamageHP;
-                        int hitsGiven = targetEntry.Hits;
-                        int heGiven = targetEntry.Grenades.HeDamage;
-                        int molotovGiven = targetEntry.Grenades.MolotovDamage;
-                        int flashGiven = targetEntry.Grenades.Flashes;
-                        float flashDurationGiven = targetEntry.Grenades.FlashDurationSeconds;
-                        int damageTaken = 0;
-                        int hitsTaken = 0;
-                        int heTaken = 0;
-                        int molotovTaken = 0;
-                        int flashTaken = 0;
-                        float flashDurationTaken = 0;
-
-                        if (playerDamageInfo.TryGetValue(targetId, out var targetInfo) && targetInfo.TryGetValue(attackerId, out var takenInfo))
-                        {
-                            damageTaken = takenInfo.DamageHP;
-                            hitsTaken = takenInfo.Hits;
-                            heTaken = takenInfo.Grenades.HeDamage;
-                            molotovTaken = takenInfo.Grenades.MolotovDamage;
-                            flashTaken = takenInfo.Grenades.Flashes;
-                            flashDurationTaken = takenInfo.Grenades.FlashDurationSeconds;
-                        }
-
-                        if (!playerData.ContainsKey(attackerId) || !playerData.ContainsKey(targetId)) continue;
-
-                        var attackerController = playerData[attackerId];
-                        var targetController = playerData[targetId];
-
-                        if (attackerController != null && targetController != null)
-                        {
-                            if (!attackerController.IsValid || !targetController.IsValid) continue;
-                            if (attackerController.Connected != PlayerConnectedState.PlayerConnected) continue;
-                            if (targetController.Connected != PlayerConnectedState.PlayerConnected) continue;
-                            if (!attackerController.PlayerPawn.IsValid || !targetController.PlayerPawn.IsValid) continue;
-                            if (attackerController.PlayerPawn.Value == null || targetController.PlayerPawn.Value == null) continue;
-
-                            int attackerHP = attackerController.PlayerPawn.Value.Health < 0 ? 0 : attackerController.PlayerPawn.Value.Health;
-                            string attackerName = attackerController.PlayerName;
-
-                            int targetHP = targetController.PlayerPawn.Value.Health < 0 ? 0 : targetController.PlayerPawn.Value.Health;
-                            string targetName = targetController.PlayerName;
-
-                            ReplyToUserCommand(attackerController, $"{ChatColors.Green}To: [{damageGiven} / {hitsGiven} hits | HE {heGiven} | Molly {molotovGiven} | Flash {flashGiven} ({flashDurationGiven:0.0}s)] From: [{damageTaken} / {hitsTaken} hits | HE {heTaken} | Molly {molotovTaken} | Flash {flashTaken} ({flashDurationTaken:0.0}s)] - {targetName} - ({targetHP} hp){ChatColors.Default}");
-                            ReplyToUserCommand(targetController, $"{ChatColors.Green}To: [{damageTaken} / {hitsTaken} hits | HE {heTaken} | Molly {molotovTaken} | Flash {flashTaken} ({flashDurationTaken:0.0}s)] From: [{damageGiven} / {hitsGiven} hits | HE {heGiven} | Molly {molotovGiven} | Flash {flashGiven} ({flashDurationGiven:0.0}s)] - {attackerName} - ({attackerHP} hp){ChatColors.Default}");
-                        }
-
-                        // Mark this pair as processed to avoid duplicates.
-                        processedPairs.Add((attackerId, targetId));
-                    }
-                }
-                playerDamageInfo.Clear();
-            }
-            catch (Exception e)
-            {
-                Server.PrintToConsole($"[ShowDamageInfo FATAL] An error occurred: {e.Message}");
-            }
-
+            playerDamageInfo.Clear();
         }
     }
 
