@@ -1,4 +1,4 @@
-﻿using CounterStrikeSharp.API;
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
@@ -36,13 +36,6 @@ public partial class BaboPlugin : BasePlugin
         Console.WriteLine("BaboPlugin loaded, executing warmup config.");
         LoadAdmins();
         ExecuteConfig("warmup.cfg");
-    }
-
-    [GameEventHandler]
-    public HookResult OnMapStart(EventMapStart @event, GameEventInfo info)
-    {
-        GetSpawns();
-        return HookResult.Continue;
     }
 
     public void GetSpawns()
@@ -133,6 +126,7 @@ public partial class BaboPlugin : BasePlugin
             isPractice = true;
             isLive = false;
             ResetReadyPlayers();
+            GetSpawns();
             ExecuteConfig("prac.cfg");
             Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {player.PlayerName} loaded practice config.");
             return HookResult.Continue;
