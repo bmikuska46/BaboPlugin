@@ -13,8 +13,6 @@ public partial class BaboPlugin : BasePlugin
     private bool isPractice = false;
     private bool isLive = false;
 
-    /// <summary>Maps team number (2=CT, 3=T) to list of spawn positions.</summary>
-    private Dictionary<byte, List<Position>> spawnsData = new();
 
     private record Position(Vector PlayerPosition, QAngle PlayerAngle);
      public Dictionary<byte, List<Position>> spawnsData = GetEmptySpawnsData();
@@ -27,7 +25,7 @@ public partial class BaboPlugin : BasePlugin
                 { (byte)CsTeam.Terrorist, new List<Position>() }
             };
         }
-        
+
     public override string ModuleName => "BaboPlugin";
     public override string ModuleVersion => "1.0.14";
     public override string ModuleAuthor => "Babo";
