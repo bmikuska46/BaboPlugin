@@ -65,7 +65,7 @@ public partial class BaboPlugin
         playerData.Clear();
         foreach (var player in Utilities.GetPlayers())
         {
-            if (!player.IsValid || player.IsBot || player.UserId == null)
+            if (!player.IsValid || player.UserId == null)
             {
                 continue;
             }

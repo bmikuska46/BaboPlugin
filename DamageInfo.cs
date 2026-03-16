@@ -14,11 +14,10 @@ namespace BaboPlugin
         {
             foreach (var key in playerData.Keys) {
                 if (!playerData[key].IsValid) continue;
-                if (playerData[key].IsBot) continue;
                 int attackerId = key;
                 foreach (var key2 in playerData.Keys) {
                     if (key == key2) continue;
-                    if (!playerData[key2].IsValid || playerData[key2].IsBot) continue;
+                    if (!playerData[key2].IsValid) continue;
                     if (playerData[key].TeamNum == playerData[key2].TeamNum) continue;
                     if (playerData[key].TeamNum == 2) {
                         if (playerData[key2].TeamNum != 3) continue;

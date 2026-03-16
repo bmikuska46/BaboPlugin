@@ -12,7 +12,7 @@ public partial class BaboPlugin : BasePlugin
     private bool isPractice = false;
     private bool isLive = false;
     public override string ModuleName => "BaboPlugin";
-    public override string ModuleVersion => "1.0.11";
+    public override string ModuleVersion => "1.0.12";
     public override string ModuleAuthor => "Babo";
     public override string ModuleDescription => "BaboPlugin";
 
