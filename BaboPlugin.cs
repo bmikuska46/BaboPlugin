@@ -2,6 +2,7 @@
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Events;
 using CounterStrikeSharp.API.Modules.Utils;
 
@@ -11,8 +12,22 @@ public partial class BaboPlugin : BasePlugin
 {
     private bool isPractice = false;
     private bool isLive = false;
+
+    /// <summary>Maps team number (2=CT, 3=T) to list of spawn positions.</summary>
+    private Dictionary<byte, List<Position>> spawnsData = new();
+
+    private record Position(Vector PlayerPosition, QAngle PlayerAngle);
+
+    private static Dictionary<byte, List<Position>> GetEmptySpawnsData()
+    {
+        return new Dictionary<byte, List<Position>>
+        {
+            [(byte)CsTeam.CounterTerrorist] = new List<Position>(),
+            [(byte)CsTeam.Terrorist] = new List<Position>()
+        };
+    }
     public override string ModuleName => "BaboPlugin";
-    public override string ModuleVersion => "1.0.13";
+    public override string ModuleVersion => "1.0.14";
     public override string ModuleAuthor => "Babo";
     public override string ModuleDescription => "BaboPlugin";
 
@@ -22,6 +37,53 @@ public partial class BaboPlugin : BasePlugin
         LoadAdmins();
         ExecuteConfig("warmup.cfg");
     }
+
+    [GameEventHandler]
+    public HookResult OnMapStart(EventMapStart @event, GameEventInfo info)
+    {
+        GetSpawns();
+        return HookResult.Continue;
+    }
+
+    public void GetSpawns()
+    {
+        spawnsData = GetEmptySpawnsData();
+
+        int minPriority = int.MaxValue;
+
+        var spawnsct = Utilities.FindAllEntitiesByDesignerName<CBaseEntity>("info_player_counterterrorist");
+        foreach (var spawn in spawnsct)
+        {
+            if (!spawn.IsValid) continue;
+            int priority = 0;
+            try { priority = spawn.GetProperty<int>("m_iPriority"); } catch { }
+            if (priority < minPriority)
+                minPriority = priority;
+        }
+        if (minPriority == int.MaxValue)
+            minPriority = 0;
+
+        foreach (var spawn in spawnsct)
+        {
+            if (!spawn.IsValid || spawn.AbsOrigin == null || spawn.AbsRotation == null) continue;
+            int priority = 0;
+            try { priority = spawn.GetProperty<int>("m_iPriority"); } catch { }
+            if (priority == minPriority)
+                spawnsData[(byte)CsTeam.CounterTerrorist].Add(new Position(spawn.AbsOrigin, spawn.AbsRotation));
+        }
+
+        var spawnst = Utilities.FindAllEntitiesByDesignerName<CBaseEntity>("info_player_terrorist");
+        foreach (var spawn in spawnst)
+        {
+            if (!spawn.IsValid || spawn.AbsOrigin == null || spawn.AbsRotation == null) continue;
+            int priority = 0;
+            try { priority = spawn.GetProperty<int>("m_iPriority"); } catch { }
+            if (priority == minPriority)
+                spawnsData[(byte)CsTeam.Terrorist].Add(new Position(spawn.AbsOrigin, spawn.AbsRotation));
+        }
+
+    }
+
 
     [GameEventHandler]
     public HookResult OnPlayerChat(EventPlayerChat @event, GameEventInfo info)
@@ -122,7 +184,45 @@ public partial class BaboPlugin : BasePlugin
             return HookResult.Continue;
         }
 
+        if (text.StartsWith(".spawn"))
+        {
+            var parts = rawText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var spawnArg = parts.Length > 1 ? parts[1] : "";
+            HandleSpawnCommand(player, spawnArg, (byte)player.TeamNum, "spawn");
+            return HookResult.Continue;
+        }
+
         return HookResult.Continue;
+    }
+
+    private void HandleSpawnCommand(CCSPlayerController? player, string commandArg, byte teamNum, string command)
+    {
+        if (!isPractice || !IsPlayerValid(player)) return;
+        if (teamNum != 2 && teamNum != 3) return;
+        if (!string.IsNullOrWhiteSpace(commandArg))
+        {
+            if (int.TryParse(commandArg, out int spawnNumber) && spawnNumber >= 1)
+            {
+                spawnNumber -= 1;
+                if (!spawnsData.ContainsKey(teamNum) || spawnsData[teamNum].Count <= spawnNumber)
+                {
+                    ReplyToUserCommand(player, "Invalid spawn number.");
+                    return;
+                }
+                var pos = spawnsData[teamNum][spawnNumber];
+                player!.PlayerPawn.Value!.Teleport(pos.PlayerPosition, pos.PlayerAngle, new Vector(0, 0, 0));
+                ReplyToUserCommand(player, $"Moved to spawn: {spawnNumber + 1}/{spawnsData[teamNum].Count}");
+            }
+            else
+            {
+                ReplyToUserCommand(player, "Invalid value. Usage: .spawn <number>");
+                return;
+            }
+        }
+        else
+        {
+            ReplyToUserCommand(player, $"Usage: .{command} <number>");
+        }
     }
 
 
