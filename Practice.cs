@@ -1,5 +1,4 @@
-using System;
-using System.Collections.Generic;
+
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 
@@ -100,7 +99,7 @@ public partial class BaboPlugin
                 player.PrintToChat(" \x04[BaboPlugin]\x01 All bots set to stand.");
                 return true;
             case ".bot_place":
-                Server.ExecuteCommand("bot_place");
+                player.ExecuteClientCommandFromServer("bot_place");
                 player.PrintToChat(" \x04[BaboPlugin]\x01 Placed a bot at your crosshair.");
                 return true;
             default:
