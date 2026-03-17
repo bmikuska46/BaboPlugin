@@ -27,7 +27,7 @@ public partial class BaboPlugin : BasePlugin
         }
 
     public override string ModuleName => "BaboPlugin";
-    public override string ModuleVersion => "1.0.14";
+    public override string ModuleVersion => "1.0.15";
     public override string ModuleAuthor => "Babo";
     public override string ModuleDescription => "BaboPlugin";
 
@@ -179,6 +179,16 @@ public partial class BaboPlugin : BasePlugin
             var parts = rawText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var spawnArg = parts.Length > 1 ? parts[1] : "";
             HandleSpawnCommand(player, spawnArg, (byte)player.TeamNum, "spawn");
+            return HookResult.Continue;
+        }
+
+        if (TryHandlePracticeWeaponCommand(player, text))
+        {
+            return HookResult.Continue;
+        }
+
+        if (TryHandlePracticeBotCommand(player, text))
+        {
             return HookResult.Continue;
         }
 
