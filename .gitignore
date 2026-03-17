@@ -3,6 +3,7 @@ bin/Debug/
 bin/Release/net8.0/BaboPlugin.deps.json
 bin/Release/net8.0/BaboPlugin.pdb
 obj/
+bin/
 
 # User-specific files
 *.user
