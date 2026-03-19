@@ -99,12 +99,62 @@ public partial class BaboPlugin
                 player.PrintToChat(" \x04[BaboPlugin]\x01 All bots set to stand.");
                 return true;
             case ".bot_place":
-                player.ExecuteClientCommandFromServer("bot_place");
-                player.PrintToChat(" \x04[BaboPlugin]\x01 Placed a bot at your crosshair.");
+                if (!player.PawnIsAlive)
+                {
+                    player.PrintToChat(" \x04[BaboPlugin]\x01 You must be alive to use .bot_place.");
+                    return true;
+                }
+
+                EnsureBotAvailableForPlacement(player);
+
+                try
+                {
+                    player.ExecuteClientCommandFromServer("bot_place");
+                }
+                catch
+                {
+                    Server.ExecuteCommand("bot_place");
+                }
+
+                player.PrintToChat(" \x04[BaboPlugin]\x01 Attempted bot_place at your crosshair.");
+                return true;
+            case ".rethrow":
+                if (!player.PawnIsAlive)
+                {
+                    player.PrintToChat(" \x04[BaboPlugin]\x01 You must be alive to use .rethrow.");
+                    return true;
+                }
+
+                try
+                {
+                    player.ExecuteClientCommandFromServer("sv_rethrow_last_grenade");
+                }
+                catch
+                {
+                    Server.ExecuteCommand("sv_rethrow_last_grenade");
+                }
+
+                player.PrintToChat(" \x04[BaboPlugin]\x01 Rethrew the last grenade.");
                 return true;
             default:
                 return false;
         }
+    }
+
+    private static void EnsureBotAvailableForPlacement(CCSPlayerController player)
+    {
+        var hasBot = Utilities.GetPlayers().Any(p => p.IsValid && p.IsBot);
+        if (hasBot)
+        {
+            return;
+        }
+
+        // With bot_quota 0, bot_place often has nothing to move/place.
+        Server.ExecuteCommand("bot_quota_mode normal");
+        Server.ExecuteCommand("bot_quota 1");
+
+        var addCommand = player.TeamNum == 3 ? "bot_add_t" : "bot_add_ct";
+        Server.ExecuteCommand(addCommand);
     }
 }
 
