@@ -1,6 +1,7 @@
 
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Utils;
 
 namespace BaboPlugin;
 
@@ -80,6 +81,32 @@ public partial class BaboPlugin
             return false;
         }
 
+        if (text.StartsWith(".bot_place", StringComparison.Ordinal))
+        {
+            if (!player.PawnIsAlive)
+            {
+                player.PrintToChat(" \x04[BaboPlugin]\x01 You must be alive to use .bot_place.");
+                return true;
+            }
+
+            var botIndex = 1;
+            var parts = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length > 2)
+            {
+                player.PrintToChat(" \x04[BaboPlugin]\x01 Usage: .bot_place <index>");
+                return true;
+            }
+
+            if (parts.Length == 2 && (!int.TryParse(parts[1], out botIndex) || botIndex < 1))
+            {
+                player.PrintToChat(" \x04[BaboPlugin]\x01 Invalid bot index. Use 1, 2, 3...");
+                return true;
+            }
+
+            PlaceBotAtPlayerPosition(player, botIndex);
+            return true;
+        }
+
         switch (text)
         {
             case ".bot_add_ct":
@@ -97,26 +124,6 @@ public partial class BaboPlugin
             case ".bot_stand":
                 Server.ExecuteCommand("bot_crouch 0");
                 player.PrintToChat(" \x04[BaboPlugin]\x01 All bots set to stand.");
-                return true;
-            case ".bot_place":
-                if (!player.PawnIsAlive)
-                {
-                    player.PrintToChat(" \x04[BaboPlugin]\x01 You must be alive to use .bot_place.");
-                    return true;
-                }
-
-                EnsureBotAvailableForPlacement(player);
-
-                try
-                {
-                    player.ExecuteClientCommandFromServer("bot_place");
-                }
-                catch
-                {
-                    Server.ExecuteCommand("bot_place");
-                }
-
-                player.PrintToChat(" \x04[BaboPlugin]\x01 Attempted bot_place at your crosshair.");
                 return true;
             case ".rethrow":
                 if (!player.PawnIsAlive)
@@ -141,20 +148,55 @@ public partial class BaboPlugin
         }
     }
 
-    private static void EnsureBotAvailableForPlacement(CCSPlayerController player)
+    private static void EnsureBotAvailableForPlacement(CCSPlayerController player, int minimumBotCount = 1)
     {
-        var hasBot = Utilities.GetPlayers().Any(p => p.IsValid && p.IsBot);
-        if (hasBot)
+        var botCount = Utilities.GetPlayers().Count(p => p.IsValid && p.IsBot);
+        if (botCount >= minimumBotCount)
         {
             return;
         }
 
-        // With bot_quota 0, bot_place often has nothing to move/place.
+        // With bot_quota 0, practice can have no bots available for placement.
         Server.ExecuteCommand("bot_quota_mode normal");
-        Server.ExecuteCommand("bot_quota 1");
+        Server.ExecuteCommand($"bot_quota {minimumBotCount}");
 
         var addCommand = player.TeamNum == 3 ? "bot_add_t" : "bot_add_ct";
-        Server.ExecuteCommand(addCommand);
+        for (var i = botCount; i < minimumBotCount; i++)
+        {
+            Server.ExecuteCommand(addCommand);
+        }
+    }
+
+    private static void PlaceBotAtPlayerPosition(CCSPlayerController player, int botIndex)
+    {
+        EnsureBotAvailableForPlacement(player, botIndex);
+
+        var bots = Utilities.GetPlayers().Where(p =>
+            p.IsValid &&
+            p.IsBot &&
+            p.PlayerPawn.IsValid &&
+            p.PlayerPawn.Value != null)
+            .ToList();
+
+        if (bots.Count < botIndex)
+        {
+            player.PrintToChat($" \x04[BaboPlugin]\x01 Could not find bot index {botIndex}. Current bot count: {bots.Count}.");
+            return;
+        }
+
+        var bot = bots[botIndex - 1];
+        var playerPawn = player.PlayerPawn.Value;
+        var botPawn = bot.PlayerPawn.Value;
+        if (playerPawn == null || botPawn == null)
+        {
+            player.PrintToChat(" \x04[BaboPlugin]\x01 Failed to place bot.");
+            return;
+        }
+
+        var destination = playerPawn.AbsOrigin;
+        var angle = playerPawn.AbsRotation;
+        botPawn.Teleport(destination, angle, new Vector(0, 0, 0));
+        player.PrintToChat($" \x04[BaboPlugin]\x01 Teleported bot #{botIndex} ({bot.PlayerName}) to your position.");
     }
 }
 
