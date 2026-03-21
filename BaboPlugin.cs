@@ -1,4 +1,4 @@
-using CounterStrikeSharp.API;
+﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
@@ -111,6 +111,12 @@ public partial class BaboPlugin : BasePlugin
             return HookResult.Continue;
         }
 
+        if (text == ".help")
+        {
+            HandlePracticeHelpCommand(player);
+            return HookResult.Continue;
+        }
+
         if (isRestrictedCommand && !IsAdmin(player))
         {
             player.PrintToChat(" \x04[BaboPlugin]\x01 You are not allowed to use this command.");
@@ -212,6 +218,7 @@ public partial class BaboPlugin : BasePlugin
                 var pos = spawnsData[teamNum][spawnNumber];
                 player!.PlayerPawn.Value!.Teleport(pos.PlayerPosition, pos.PlayerAngle, new Vector(0, 0, 0));
                 ReplyToUserCommand(player, $"Moved to spawn: {spawnNumber + 1}/{spawnsData[teamNum].Count}");
+                AnnouncePracticeCommandUsage(player, $".{command} {spawnNumber + 1}");
             }
             else
             {
@@ -347,6 +354,7 @@ public partial class BaboPlugin : BasePlugin
 				player.PlayerPawn.Value.Health = 100;
 				// ReplyToUserCommand(player, $"God mode disabled!");
                 		ReplyToUserCommand(player, "God mode disabled!");
+                AnnouncePracticeCommandUsage(player, ".god (disabled)");
 				return;
 			}
 			else
@@ -354,7 +362,43 @@ public partial class BaboPlugin : BasePlugin
 				player.PlayerPawn.Value.Health = 2147483647; // max 32bit int
 				// ReplyToUserCommand(player, $"God mode enabled!");
                 		ReplyToUserCommand(player, "God mode enabled!");
+                AnnouncePracticeCommandUsage(player, ".god (enabled)");
 				return;
 			}
         }
+
+    private void HandlePracticeHelpCommand(CCSPlayerController player)
+    {
+        if (!isPractice)
+        {
+            player.PrintToChat(" \x04[BaboPlugin]\x01 .help is available in practice mode.");
+            return;
+        }
+
+        var helpLines = new[]
+        {
+            "Practice commands:",
+            ".help | .spawn <number> | .god | .rethrow",
+            ".bot_add_ct | .bot_add_t | .bot_place <index> | .bot_crouch | .bot_stand",
+            ".map <name>",
+            ".weapon <weapon>",
+             };
+
+        foreach (var line in helpLines)
+        {
+            Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {line}");
+        }
+
+        AnnouncePracticeCommandUsage(player, ".help");
+    }
+
+    private void AnnouncePracticeCommandUsage(CCSPlayerController? player, string commandText)
+    {
+        if (!isPractice || player == null || !player.IsValid)
+        {
+            return;
+        }
+
+        Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {player.PlayerName} used {commandText}");
+    }
 }

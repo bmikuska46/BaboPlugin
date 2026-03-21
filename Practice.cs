@@ -58,6 +58,7 @@ public partial class BaboPlugin
         }
 
         GivePlayerWeapon(player, weaponName);
+        AnnouncePracticeCommandUsage(player, text);
         return true;
     }
 
@@ -104,6 +105,7 @@ public partial class BaboPlugin
             }
 
             PlaceBotAtPlayerPosition(player, botIndex);
+            AnnouncePracticeCommandUsage(player, $".bot_place {botIndex}");
             return true;
         }
 
@@ -112,18 +114,22 @@ public partial class BaboPlugin
             case ".bot_add_ct":
                 Server.ExecuteCommand("bot_add_ct");
                 player.PrintToChat(" \x04[BaboPlugin]\x01 Added CT bot.");
+                AnnouncePracticeCommandUsage(player, ".bot_add_ct");
                 return true;
             case ".bot_add_t":
                 Server.ExecuteCommand("bot_add_t");
                 player.PrintToChat(" \x04[BaboPlugin]\x01 Added T bot.");
+                AnnouncePracticeCommandUsage(player, ".bot_add_t");
                 return true;
             case ".bot_crouch":
                 Server.ExecuteCommand("bot_crouch 1");
                 player.PrintToChat(" \x04[BaboPlugin]\x01 All bots set to crouch.");
+                AnnouncePracticeCommandUsage(player, ".bot_crouch");
                 return true;
             case ".bot_stand":
                 Server.ExecuteCommand("bot_crouch 0");
                 player.PrintToChat(" \x04[BaboPlugin]\x01 All bots set to stand.");
+                AnnouncePracticeCommandUsage(player, ".bot_stand");
                 return true;
             case ".rethrow":
                 if (!player.PawnIsAlive)
@@ -142,6 +148,7 @@ public partial class BaboPlugin
                 }
 
                 player.PrintToChat(" \x04[BaboPlugin]\x01 Rethrew the last grenade.");
+                AnnouncePracticeCommandUsage(player, ".rethrow");
                 return true;
             default:
                 return false;
