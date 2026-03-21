@@ -27,7 +27,7 @@ public partial class BaboPlugin : BasePlugin
         }
 
     public override string ModuleName => "BaboPlugin";
-    public override string ModuleVersion => "1.0.18";
+    public override string ModuleVersion => "1.0.19";
     public override string ModuleAuthor => "Babo";
     public override string ModuleDescription => "BaboPlugin";
 
