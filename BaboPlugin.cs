@@ -1,4 +1,4 @@
-﻿using CounterStrikeSharp.API;
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
@@ -10,6 +10,9 @@ namespace BaboPlugin;
 
 public partial class BaboPlugin : BasePlugin
 {
+    /// <summary>When true, .ready/.unready are ignored and .live does not require all players ready.</summary>
+    private const bool ReadyCommandTemporarilyDisabled = true;
+
     private bool isPractice = false;
     private bool isLive = false;
 
@@ -27,7 +30,7 @@ public partial class BaboPlugin : BasePlugin
         }
 
     public override string ModuleName => "BaboPlugin";
-    public override string ModuleVersion => "1.0.19";
+    public override string ModuleVersion => "1.0.20";
     public override string ModuleAuthor => "Babo";
     public override string ModuleDescription => "BaboPlugin";
 
@@ -95,12 +98,25 @@ public partial class BaboPlugin : BasePlugin
 
         if (text == ".ready")
         {
+            if (ReadyCommandTemporarilyDisabled)
+            {
+                player.PrintToChat(
+                    " \x04[BaboPlugin]\x01 .ready is temporarily disabled. An admin can start with .live.");
+                return HookResult.Continue;
+            }
+
             HandleReadyCommand(player);
             return HookResult.Continue;
         }
 
         if (text == ".unready")
         {
+            if (ReadyCommandTemporarilyDisabled)
+            {
+                player.PrintToChat(" \x04[BaboPlugin]\x01 .unready is temporarily disabled.");
+                return HookResult.Continue;
+            }
+
             HandleUnreadyCommand(player);
             return HookResult.Continue;
         }
@@ -145,12 +161,15 @@ public partial class BaboPlugin : BasePlugin
         }
 
         if (text == ".live")
-        {   
-            if (!AreAllConnectedPlayersReady(out var readyCount, out var totalCount))
+        {
+            if (!ReadyCommandTemporarilyDisabled &&
+                !AreAllConnectedPlayersReady(out var readyCount, out var totalCount))
             {
-                player.PrintToChat($" \x04[BaboPlugin]\x01 Cannot start live. Ready: {readyCount}/{totalCount}. Players must type .ready");
+                player.PrintToChat(
+                    $" \x04[BaboPlugin]\x01 Cannot start live. Ready: {readyCount}/{totalCount}. Players must type .ready");
                 return HookResult.Continue;
             }
+
             isPractice = false;
             isLive = true;
 
