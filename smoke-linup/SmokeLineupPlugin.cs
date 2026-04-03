@@ -18,7 +18,7 @@ public partial class BaboPlugin
 
     private bool IsSmokeLineupAvailable()
     {
-        return isPractice && !isWarmup;
+        return isPractice;
     }
 
     private void LoadSmokeLineupConfig()
