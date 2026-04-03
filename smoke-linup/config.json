@@ -1,0 +1,17 @@
+{
+  "Version": 1,
+
+  "DiscordWebhookUrl": "",
+
+  "ExportDirectory": "addons/counterstrikesharp/plugins/BaboPlugin/lineups",
+
+  "ScreenshotDelay": 0.8,
+
+  "EnableThirdPersonScreenshots": true,
+
+  "ImpactCameraHeight": 400.0,
+
+  "SpawnPositionMarker": true,
+
+  "MaxConcurrentSessions": 5
+}

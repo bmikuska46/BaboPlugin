@@ -11,10 +11,11 @@ namespace BaboPlugin;
 public partial class BaboPlugin : BasePlugin
 {
     /// <summary>When true, .ready/.unready are ignored and .live does not require all players ready.</summary>
-    private const bool ReadyCommandTemporarilyDisabled = true;
+    private static readonly bool ReadyCommandTemporarilyDisabled = true;
 
     private bool isPractice = false;
     private bool isLive = false;
+    private bool isWarmup = false;
 
 
     public record Position(Vector PlayerPosition, QAngle PlayerAngle);
@@ -38,6 +39,7 @@ public partial class BaboPlugin : BasePlugin
     {
         Console.WriteLine("BaboPlugin loaded, executing warmup config.");
         LoadAdmins();
+        LoadSmokeLineupConfig();
         ExecuteConfig("warmup.cfg");
     }
 
@@ -143,7 +145,9 @@ public partial class BaboPlugin : BasePlugin
         {
             isPractice = true;
             isLive = false;
+            isWarmup = false;
             ResetReadyPlayers();
+            PurgeAllSmokeLineupState();
             GetSpawns();
             ExecuteConfig("prac.cfg");
             Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {player.PlayerName} loaded practice config.");
@@ -154,7 +158,9 @@ public partial class BaboPlugin : BasePlugin
         {
             isPractice = true;
             isLive = false;
+            isWarmup = true;
             ResetReadyPlayers();
+            PurgeAllSmokeLineupState();
             ExecuteConfig("warmup.cfg");
             Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {player.PlayerName} loaded warmup config.");
             return HookResult.Continue;
@@ -172,8 +178,10 @@ public partial class BaboPlugin : BasePlugin
 
             isPractice = false;
             isLive = true;
+            isWarmup = false;
 
             ResetReadyPlayers();
+            PurgeAllSmokeLineupState();
             ExecuteConfig("live.cfg");
             Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {player.PlayerName} loaded live config.");
             return HookResult.Continue;
@@ -189,6 +197,8 @@ public partial class BaboPlugin : BasePlugin
         {
             isPractice = false;
             isLive = false;
+            isWarmup = false;
+            PurgeAllSmokeLineupState();
             HandleMapCommand(player, rawText);
             return HookResult.Continue;
         }
@@ -213,6 +223,11 @@ public partial class BaboPlugin : BasePlugin
         }
 
         if (TryHandlePracticeBotCommand(player, text))
+        {
+            return HookResult.Continue;
+        }
+
+        if (TryHandleSmokeLineupCommand(player, rawText, text))
         {
             return HookResult.Continue;
         }
@@ -403,9 +418,24 @@ public partial class BaboPlugin : BasePlugin
             ".weapon <weapon>",
              };
 
+        var smokeHelpLines = new[]
+        {
+            "Smoke lineup commands:",
+            ".record_smoke <name> | .snap | .throw normal|middle|jump|wjump",
+            ".snap_start | .snap_end | .done | .cancel_smoke"
+        };
+
         foreach (var line in helpLines)
         {
             Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {line}");
+        }
+
+        if (!isWarmup)
+        {
+            foreach (var line in smokeHelpLines)
+            {
+                Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {line}");
+            }
         }
 
         AnnouncePracticeCommandUsage(player, ".help");
