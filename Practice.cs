@@ -45,21 +45,21 @@ public partial class BaboPlugin
 
     };
 
-    private bool TryHandlePracticeWeaponCommand(CCSPlayerController player, string text)
+    private void ExecutePracticeWeaponCommand(CCSPlayerController? player, string text)
     {
         if (!isPractice || !IsPlayerValid(player))
         {
-            return false;
+            return;
         }
 
         if (!PracticeWeaponCommands.TryGetValue(text, out var weaponName))
         {
-            return false;
+            ReplyToUserCommand(player, $"Unknown weapon command: {text}");
+            return;
         }
 
-        GivePlayerWeapon(player, weaponName);
+        GivePlayerWeapon(player!, weaponName);
         AnnouncePracticeCommandUsage(player, text);
-        return true;
     }
 
     private static void GivePlayerWeapon(CCSPlayerController player, string weaponName)
@@ -75,11 +75,11 @@ public partial class BaboPlugin
         }
     }
 
-    private bool TryHandlePracticeBotCommand(CCSPlayerController player, string text)
+    private void ExecutePracticeBotCommand(CCSPlayerController? player, string text)
     {
-        if (!isPractice)
+        if (!isPractice || player == null || !player.IsValid)
         {
-            return false;
+            return;
         }
 
         if (text.StartsWith(".bot_place", StringComparison.Ordinal))
@@ -87,7 +87,7 @@ public partial class BaboPlugin
             if (!player.PawnIsAlive)
             {
                 player.PrintToChat(" \x04[BaboPlugin]\x01 You must be alive to use .bot_place.");
-                return true;
+                return;
             }
 
             var botIndex = 1;
@@ -95,18 +95,18 @@ public partial class BaboPlugin
             if (parts.Length > 2)
             {
                 player.PrintToChat(" \x04[BaboPlugin]\x01 Usage: .bot_place <index>");
-                return true;
+                return;
             }
 
             if (parts.Length == 2 && (!int.TryParse(parts[1], out botIndex) || botIndex < 1))
             {
                 player.PrintToChat(" \x04[BaboPlugin]\x01 Invalid bot index. Use 1, 2, 3...");
-                return true;
+                return;
             }
 
             PlaceBotAtPlayerPosition(player, botIndex);
             AnnouncePracticeCommandUsage(player, $".bot_place {botIndex}");
-            return true;
+            return;
         }
 
         switch (text)
@@ -115,27 +115,27 @@ public partial class BaboPlugin
                 Server.ExecuteCommand("bot_add_ct");
                 player.PrintToChat(" \x04[BaboPlugin]\x01 Added CT bot.");
                 AnnouncePracticeCommandUsage(player, ".bot_add_ct");
-                return true;
+                return;
             case ".bot_add_t":
                 Server.ExecuteCommand("bot_add_t");
                 player.PrintToChat(" \x04[BaboPlugin]\x01 Added T bot.");
                 AnnouncePracticeCommandUsage(player, ".bot_add_t");
-                return true;
+                return;
             case ".bot_crouch":
                 Server.ExecuteCommand("bot_crouch 1");
                 player.PrintToChat(" \x04[BaboPlugin]\x01 All bots set to crouch.");
                 AnnouncePracticeCommandUsage(player, ".bot_crouch");
-                return true;
+                return;
             case ".bot_stand":
                 Server.ExecuteCommand("bot_crouch 0");
                 player.PrintToChat(" \x04[BaboPlugin]\x01 All bots set to stand.");
                 AnnouncePracticeCommandUsage(player, ".bot_stand");
-                return true;
+                return;
             case ".rethrow":
                 if (!player.PawnIsAlive)
                 {
                     player.PrintToChat(" \x04[BaboPlugin]\x01 You must be alive to use .rethrow.");
-                    return true;
+                    return;
                 }
 
                 try
@@ -149,9 +149,10 @@ public partial class BaboPlugin
 
                 player.PrintToChat(" \x04[BaboPlugin]\x01 Rethrew the last grenade.");
                 AnnouncePracticeCommandUsage(player, ".rethrow");
-                return true;
+                return;
             default:
-                return false;
+                ReplyToUserCommand(player, $"Unknown practice command: {text}");
+                return;
         }
     }
 
@@ -206,4 +207,3 @@ public partial class BaboPlugin
         player.PrintToChat($" \x04[BaboPlugin]\x01 Teleported bot #{botIndex} ({bot.PlayerName}) to your position.");
     }
 }
-

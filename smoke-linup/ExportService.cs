@@ -1,6 +1,5 @@
 using System.IO.Compression;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
@@ -24,8 +23,7 @@ public class ExportService
     public async Task<(string zipPath, bool discordOk)> ExportAsync(
         LineupData data,
         string     exportRoot,
-        string     discordBotToken,
-        string     discordChannelId)
+        string     discordWebhookUrl)
     {
         var safe   = MakeSafe(data.Name);
         var stamp  = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -47,11 +45,8 @@ public class ExportService
 
         // 4. Discord
         bool discordOk = false;
-        if (!string.IsNullOrWhiteSpace(discordBotToken) &&
-            !string.IsNullOrWhiteSpace(discordChannelId))
-        {
-            discordOk = await PostToDiscordAsync(data, zipPath, discordBotToken, discordChannelId);
-        }
+        if (!string.IsNullOrWhiteSpace(discordWebhookUrl))
+            discordOk = await PostToDiscordAsync(data, zipPath, discordWebhookUrl);
 
         return (zipPath, discordOk);
     }
@@ -63,8 +58,7 @@ public class ExportService
     private async Task<bool> PostToDiscordAsync(
         LineupData data,
         string     zipPath,
-        string     botToken,
-        string     channelId)
+        string     webhookUrl)
     {
         try
         {
@@ -149,21 +143,18 @@ public class ExportService
                 timestamp   = DateTime.UtcNow.ToString("o")
             };
 
-            var fi = new FileInfo(zipPath);
-            var attachments = fi.Exists
-                ? new[] { new { id = 0, filename = fi.Name } }
-                : Array.Empty<object>();
-
             var payloadJson = JsonSerializer.Serialize(new
             {
-                embeds = new[] { embed },
-                attachments
+                username = "Smoke Lineup Bot",
+                embeds   = new[] { embed }
             });
 
             using var form = new MultipartFormDataContent();
             form.Add(new StringContent(payloadJson, Encoding.UTF8, "application/json"), "payload_json");
 
-            if (fi.Exists)
+            // Attach ZIP (<25 MB Discord limit)
+            var fi = new FileInfo(zipPath);
+            if (fi.Exists && fi.Length < 25L * 1024 * 1024)
             {
                 var bytes   = await File.ReadAllBytesAsync(zipPath);
                 var content = new ByteArrayContent(bytes);
@@ -172,19 +163,7 @@ public class ExportService
                 form.Add(content, "files[0]", fi.Name);
             }
 
-            using var request = new HttpRequestMessage(
-                HttpMethod.Post,
-                $"https://discord.com/api/v10/channels/{channelId}/messages");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bot", botToken);
-            request.Content = form;
-
-            var resp = await _http.SendAsync(request);
-            if (!resp.IsSuccessStatusCode)
-            {
-                var responseBody = await resp.Content.ReadAsStringAsync();
-                Console.WriteLine($"[SmokeLineup] Discord API error {(int)resp.StatusCode}: {responseBody}");
-            }
-
+            var resp = await _http.PostAsync(webhookUrl, form);
             return resp.IsSuccessStatusCode;
         }
         catch (Exception ex)

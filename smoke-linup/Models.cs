@@ -115,11 +115,8 @@ public class SmokeLineupConfig
 {
     public int Version { get; set; } = 1;
 
-    [JsonPropertyName("DiscordBotToken")]
-    public string DiscordBotToken { get; set; } = "";
-
-    [JsonPropertyName("DiscordChannelId")]
-    public string DiscordChannelId { get; set; } = "1073237888814288976";
+    [JsonPropertyName("DiscordWebhookUrl")]
+    public string DiscordWebhookUrl { get; set; } = "";
 
     /// Server-side path (relative to game root) where lineup ZIPs are written.
     [JsonPropertyName("ExportDirectory")]

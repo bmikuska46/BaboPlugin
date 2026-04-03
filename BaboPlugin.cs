@@ -1,9 +1,7 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Entities;
-using CounterStrikeSharp.API.Modules.Events;
 using CounterStrikeSharp.API.Modules.Utils;
 
 namespace BaboPlugin;
@@ -31,7 +29,7 @@ public partial class BaboPlugin : BasePlugin
         }
 
     public override string ModuleName => "BaboPlugin";
-    public override string ModuleVersion => "1.0.24";
+    public override string ModuleVersion => "1.0.25";
     public override string ModuleAuthor => "Babo";
     public override string ModuleDescription => "BaboPlugin";
 
@@ -40,6 +38,7 @@ public partial class BaboPlugin : BasePlugin
         Console.WriteLine("BaboPlugin loaded, executing warmup config.");
         LoadAdmins();
         LoadSmokeLineupConfig();
+        RegisterChatCommandListeners();
         ExecuteConfig("warmup.cfg");
     }
 
@@ -77,164 +76,6 @@ public partial class BaboPlugin : BasePlugin
             }
 
         }
-
-
-    [GameEventHandler]
-    public HookResult OnPlayerChat(EventPlayerChat @event, GameEventInfo info)
-    {
-        var player = Utilities.GetPlayerFromSlot(@event.Userid);
-        if (player == null || !player.IsValid)
-        {
-            return HookResult.Continue;
-        }
-
-        var rawText = (@event.Text ?? string.Empty).Trim();
-        var text = rawText.ToLowerInvariant();
-        var isRestrictedCommand =
-            text == ".prac" ||
-            text == ".warmup" ||
-            text == ".live" ||
-            text.StartsWith(".move ") ||
-            text.StartsWith(".map") ||
-            text == ".god";
-
-        if (text == ".ready")
-        {
-            if (ReadyCommandTemporarilyDisabled)
-            {
-                player.PrintToChat(
-                    " \x04[BaboPlugin]\x01 .ready is temporarily disabled. An admin can start with .live.");
-                return HookResult.Continue;
-            }
-
-            HandleReadyCommand(player);
-            return HookResult.Continue;
-        }
-
-        if (text == ".unready")
-        {
-            if (ReadyCommandTemporarilyDisabled)
-            {
-                player.PrintToChat(" \x04[BaboPlugin]\x01 .unready is temporarily disabled.");
-                return HookResult.Continue;
-            }
-
-            HandleUnreadyCommand(player);
-            return HookResult.Continue;
-        }
-
-        if (text == ".pause" || text == ".unpause")
-        {
-            HandlePauseCommand(player, text == ".pause");
-            return HookResult.Continue;
-        }
-
-        if (text == ".help")
-        {
-            HandlePracticeHelpCommand(player);
-            return HookResult.Continue;
-        }
-
-        if (isRestrictedCommand && !IsAdmin(player))
-        {
-            player.PrintToChat(" \x04[BaboPlugin]\x01 You are not allowed to use this command.");
-            return HookResult.Continue;
-        }
-
-        if (text == ".prac")
-        {
-            isPractice = true;
-            isLive = false;
-            isWarmup = false;
-            ResetReadyPlayers();
-            PurgeAllSmokeLineupState();
-            GetSpawns();
-            ExecuteConfig("prac.cfg");
-            Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {player.PlayerName} loaded practice config.");
-            return HookResult.Continue;
-        }
-
-        if (text == ".warmup")
-        {
-            isPractice = true;
-            isLive = false;
-            isWarmup = true;
-            ResetReadyPlayers();
-            PurgeAllSmokeLineupState();
-            ExecuteConfig("warmup.cfg");
-            Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {player.PlayerName} loaded warmup config.");
-            return HookResult.Continue;
-        }
-
-        if (text == ".live")
-        {
-            if (!ReadyCommandTemporarilyDisabled &&
-                !AreAllConnectedPlayersReady(out var readyCount, out var totalCount))
-            {
-                player.PrintToChat(
-                    $" \x04[BaboPlugin]\x01 Cannot start live. Ready: {readyCount}/{totalCount}. Players must type .ready");
-                return HookResult.Continue;
-            }
-
-            isPractice = false;
-            isLive = true;
-            isWarmup = false;
-
-            ResetReadyPlayers();
-            PurgeAllSmokeLineupState();
-            ExecuteConfig("live.cfg");
-            Server.PrintToChatAll($" \x04[BaboPlugin]\x01 {player.PlayerName} loaded live config.");
-            return HookResult.Continue;
-        }
-
-        if (text.StartsWith(".move "))
-        {
-            HandleMoveCommand(player, rawText);
-            return HookResult.Continue;
-        }
-
-        if (text.StartsWith(".map"))
-        {
-            isPractice = false;
-            isLive = false;
-            isWarmup = false;
-            PurgeAllSmokeLineupState();
-            HandleMapCommand(player, rawText);
-            return HookResult.Continue;
-        }
-
-        if (text == ".god")
-        {
-            HandleGodCommand(player);
-            return HookResult.Continue;
-        }
-
-        if (text.StartsWith(".spawn"))
-        {
-            var parts = rawText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var spawnArg = parts.Length > 1 ? parts[1] : "";
-            HandleSpawnCommand(player, spawnArg, (byte)player.TeamNum, "spawn");
-            return HookResult.Continue;
-        }
-
-        if (TryHandleSmokeLineupCommand(player, rawText, text))
-        {
-            return HookResult.Continue;
-        }
-
-        if (TryHandlePracticeWeaponCommand(player, text))
-        {
-            return HookResult.Continue;
-        }
-
-        if (TryHandlePracticeBotCommand(player, text))
-        {
-            return HookResult.Continue;
-        }
-
-        return HookResult.Continue;
-    }
-
     private void HandleSpawnCommand(CCSPlayerController? player, string commandArg, byte teamNum, string command)
     {
         if (!isPractice || !IsPlayerValid(player)) return;
