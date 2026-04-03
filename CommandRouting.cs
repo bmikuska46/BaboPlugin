@@ -138,6 +138,28 @@ public partial class BaboPlugin
             return string.Empty;
         }
 
+        var commandString = (info.GetCommandString ?? string.Empty).Trim();
+        if (commandString.StartsWith("say_team ", StringComparison.OrdinalIgnoreCase))
+        {
+            commandString = commandString[9..].Trim();
+        }
+        else if (commandString.StartsWith("say ", StringComparison.OrdinalIgnoreCase))
+        {
+            commandString = commandString[4..].Trim();
+        }
+
+        if (commandString.Length >= 2 &&
+            commandString[0] == '"' &&
+            commandString[^1] == '"')
+        {
+            commandString = commandString[1..^1];
+        }
+
+        if (!string.IsNullOrWhiteSpace(commandString))
+        {
+            return commandString.Trim();
+        }
+
         return (info.GetArg(1) ?? string.Empty).Trim().Trim('"');
     }
 
