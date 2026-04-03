@@ -1,6 +1,7 @@
 {
   "Version": 1,
-  "DiscordWebhookUrl": "",
+  "DiscordBotToken": "",
+  "DiscordChannelId": "1073237888814288976",
   "ExportDirectory": "addons/counterstrikesharp/plugins/BaboPlugin/lineups",
   "ScreenshotDelay": 0.8,
   "EnableThirdPersonScreenshots": true,

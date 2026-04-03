@@ -2,6 +2,7 @@ using System.Text.Json;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
+using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Events;
 using CounterStrikeSharp.API.Modules.Utils;
 
@@ -77,9 +78,33 @@ public partial class BaboPlugin
         smokeLineupMapName = Server.MapName ?? string.Empty;
     }
 
+    private void RegisterSmokeLineupCommandListeners()
+    {
+        AddCommandListener("say", OnSmokeLineupSay, HookMode.Pre);
+        AddCommandListener("say_team", OnSmokeLineupSay, HookMode.Pre);
+    }
+
     public override void Unload(bool hotReload)
     {
         PurgeAllSmokeLineupState();
+    }
+
+    private HookResult OnSmokeLineupSay(CCSPlayerController? player, CommandInfo info)
+    {
+        if (player == null || !player.IsValid)
+        {
+            return HookResult.Continue;
+        }
+
+        var rawText = info.GetArg(1).Trim();
+        if (string.IsNullOrWhiteSpace(rawText))
+        {
+            return HookResult.Continue;
+        }
+
+        var text = rawText.ToLowerInvariant();
+        var handled = TryHandleSmokeLineupCommand(player, rawText, text);
+        return handled ? HookResult.Handled : HookResult.Continue;
     }
 
     [GameEventHandler]
@@ -549,11 +574,13 @@ public partial class BaboPlugin
             var (zipPath, discordOk) = await smokeLineupExport.ExportAsync(
                 session.Data,
                 smokeLineupConfig.ExportDirectory,
-                smokeLineupConfig.DiscordWebhookUrl);
+                smokeLineupConfig.DiscordBotToken,
+                smokeLineupConfig.DiscordChannelId);
 
             SmokeLineupChat(player, $"Saved export: {Path.GetFileName(zipPath)}");
 
-            if (!string.IsNullOrWhiteSpace(smokeLineupConfig.DiscordWebhookUrl))
+            if (!string.IsNullOrWhiteSpace(smokeLineupConfig.DiscordBotToken) &&
+                !string.IsNullOrWhiteSpace(smokeLineupConfig.DiscordChannelId))
             {
                 SmokeLineupChat(player, discordOk ? "Discord upload succeeded." : "Discord upload failed.");
             }
