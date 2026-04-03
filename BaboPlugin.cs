@@ -31,7 +31,7 @@ public partial class BaboPlugin : BasePlugin
         }
 
     public override string ModuleName => "BaboPlugin";
-    public override string ModuleVersion => "1.0.22";
+    public override string ModuleVersion => "1.0.23";
     public override string ModuleAuthor => "Babo";
     public override string ModuleDescription => "BaboPlugin";
 
@@ -40,7 +40,6 @@ public partial class BaboPlugin : BasePlugin
         Console.WriteLine("BaboPlugin loaded, executing warmup config.");
         LoadAdmins();
         LoadSmokeLineupConfig();
-        RegisterSmokeLineupCommandListeners();
         ExecuteConfig("warmup.cfg");
     }
 
@@ -215,6 +214,11 @@ public partial class BaboPlugin : BasePlugin
             var parts = rawText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var spawnArg = parts.Length > 1 ? parts[1] : "";
             HandleSpawnCommand(player, spawnArg, (byte)player.TeamNum, "spawn");
+            return HookResult.Continue;
+        }
+
+        if (TryHandleSmokeLineupCommand(player, rawText, text))
+        {
             return HookResult.Continue;
         }
 
