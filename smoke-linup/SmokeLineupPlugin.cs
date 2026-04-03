@@ -175,113 +175,122 @@ public partial class BaboPlugin
 
     private bool TryHandleSmokeLineupCommand(CCSPlayerController player, string rawText, string text)
     {
-        PrepareSmokeLineupState();
-
-        var hasSession = smokeLineupSessions.TryGetValue(player.SteamID, out var session);
-        if (!IsSmokeLineupCommand(text) && !(hasSession && text.StartsWith(".", StringComparison.Ordinal)))
+        try
         {
-            return false;
-        }
-
-        if (!IsSmokeLineupAvailable())
-        {
-            if (IsSmokeLineupCommand(text))
+            var hasSession = smokeLineupSessions.TryGetValue(player.SteamID, out var session);
+            if (!IsSmokeLineupCommand(text) && !(hasSession && text.StartsWith(".", StringComparison.Ordinal)))
             {
-                SmokeLineupChat(player, "Smoke lineup commands are only available in .prac mode.");
-                return true;
+                return false;
             }
 
-            return false;
-        }
+            if (!IsSmokeLineupAvailable())
+            {
+                if (IsSmokeLineupCommand(text))
+                {
+                    SmokeLineupChat(player, "Smoke lineup commands are only available in .prac mode.");
+                    return true;
+                }
 
-        if (text == ".record_smoke")
-        {
-            SmokeLineupChat(player, "Usage: .record_smoke <lineup name>");
-            return true;
-        }
+                return false;
+            }
 
-        if (text.StartsWith(".record_smoke ", StringComparison.Ordinal))
-        {
-            var name = rawText.Length > 14 ? rawText[14..].Trim() : string.Empty;
-            if (string.IsNullOrWhiteSpace(name))
+            if (text == ".record_smoke")
             {
                 SmokeLineupChat(player, "Usage: .record_smoke <lineup name>");
                 return true;
             }
 
-            StartSmokeLineupRecording(player, name);
-            return true;
-        }
-
-        if (!hasSession)
-        {
-            if (IsSmokeLineupCommand(text))
+            if (text.StartsWith(".record_smoke ", StringComparison.Ordinal))
             {
-                SmokeLineupChat(player, "No active recording. Use .record_smoke <lineup name>.");
+                EnsureSmokeLineupMapState();
+
+                var name = rawText.Length > 14 ? rawText[14..].Trim() : string.Empty;
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    SmokeLineupChat(player, "Usage: .record_smoke <lineup name>");
+                    return true;
+                }
+
+                StartSmokeLineupRecording(player, name);
+                return true;
+            }
+
+            if (!hasSession)
+            {
+                if (IsSmokeLineupCommand(text))
+                {
+                    SmokeLineupChat(player, "No active recording. Use .record_smoke <lineup name>.");
+                    return true;
+                }
+
+                return false;
+            }
+
+            switch (text)
+            {
+                case ".cancel_smoke":
+                case ".cancel":
+                    CleanupSmokeLineupSession(player, silent: false);
+                    return true;
+                case ".done":
+                case ".finish":
+                    if (session!.CurrentStep == RecordingStep.ReadyToExport)
+                    {
+                        _ = FinalizeSmokeLineupAsync(player, session);
+                    }
+                    else
+                    {
+                        SmokeLineupChat(player, "The lineup is not ready yet. Follow the current step first.");
+                    }
+
+                    return true;
+                case ".snap":
+                    HandleSmokeThrowPositionSnap(player, session!);
+                    return true;
+                case ".snap_start":
+                    HandleSmokeMovementSnap(player, session!, true);
+                    return true;
+                case ".snap_end":
+                    HandleSmokeMovementSnap(player, session!, false);
+                    return true;
+                case ".throw normal":
+                case ".t normal":
+                    HandleSmokeThrowType(player, session!, ThrowType.Normal);
+                    return true;
+                case ".throw middle":
+                case ".t middle":
+                    HandleSmokeThrowType(player, session!, ThrowType.MiddleClick);
+                    return true;
+                case ".throw jump":
+                case ".t jump":
+                    HandleSmokeThrowType(player, session!, ThrowType.JumpThrow);
+                    return true;
+                case ".throw wjump":
+                case ".t wjump":
+                    HandleSmokeThrowType(player, session!, ThrowType.WJumpThrow);
+                    return true;
+            }
+
+            if (text.StartsWith(".throw ", StringComparison.Ordinal) || text.StartsWith(".t ", StringComparison.Ordinal))
+            {
+                SmokeLineupChat(player, "Throw type must be one of: normal, middle, jump, wjump.");
+                return true;
+            }
+
+            if (text.StartsWith(".", StringComparison.Ordinal))
+            {
+                SmokeLineupChat(player, "Unknown smoke command. Use .cancel_smoke to abort the recording.");
                 return true;
             }
 
             return false;
         }
-
-        switch (text)
+        catch (Exception ex)
         {
-            case ".cancel_smoke":
-            case ".cancel":
-                CleanupSmokeLineupSession(player, silent: false);
-                return true;
-            case ".done":
-            case ".finish":
-                if (session!.CurrentStep == RecordingStep.ReadyToExport)
-                {
-                    _ = FinalizeSmokeLineupAsync(player, session);
-                }
-                else
-                {
-                    SmokeLineupChat(player, "The lineup is not ready yet. Follow the current step first.");
-                }
-
-                return true;
-            case ".snap":
-                HandleSmokeThrowPositionSnap(player, session!);
-                return true;
-            case ".snap_start":
-                HandleSmokeMovementSnap(player, session!, true);
-                return true;
-            case ".snap_end":
-                HandleSmokeMovementSnap(player, session!, false);
-                return true;
-            case ".throw normal":
-            case ".t normal":
-                HandleSmokeThrowType(player, session!, ThrowType.Normal);
-                return true;
-            case ".throw middle":
-            case ".t middle":
-                HandleSmokeThrowType(player, session!, ThrowType.MiddleClick);
-                return true;
-            case ".throw jump":
-            case ".t jump":
-                HandleSmokeThrowType(player, session!, ThrowType.JumpThrow);
-                return true;
-            case ".throw wjump":
-            case ".t wjump":
-                HandleSmokeThrowType(player, session!, ThrowType.WJumpThrow);
-                return true;
-        }
-
-        if (text.StartsWith(".throw ", StringComparison.Ordinal) || text.StartsWith(".t ", StringComparison.Ordinal))
-        {
-            SmokeLineupChat(player, "Throw type must be one of: normal, middle, jump, wjump.");
+            player.PrintToChat($" \x04[BaboPlugin]\x01 [Smoke] Error: {ex.Message}");
+            Console.WriteLine($"[SmokeLineup] Command handler failed: {ex}");
             return true;
         }
-
-        if (text.StartsWith(".", StringComparison.Ordinal))
-        {
-            SmokeLineupChat(player, "Unknown smoke command. Use .cancel_smoke to abort the recording.");
-            return true;
-        }
-
-        return false;
     }
 
     private void StartSmokeLineupRecording(CCSPlayerController player, string name)
@@ -584,8 +593,23 @@ public partial class BaboPlugin
 
     private void PrepareSmokeLineupState()
     {
-        EnsureSmokeLineupMapState();
-        PruneSmokeLineupSessions();
+        try
+        {
+            EnsureSmokeLineupMapState();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SmokeLineup] Failed to sync map state: {ex}");
+        }
+
+        try
+        {
+            PruneSmokeLineupSessions();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SmokeLineup] Failed to prune sessions: {ex}");
+        }
     }
 
     private void EnsureSmokeLineupMapState()
@@ -614,7 +638,7 @@ public partial class BaboPlugin
         }
 
         var connectedSteamIds = Utilities.GetPlayers()
-            .Where(p => p.IsValid)
+            .Where(p => p.IsValid && p.AuthorizedSteamID != null)
             .Select(p => p.SteamID)
             .ToHashSet();
 
