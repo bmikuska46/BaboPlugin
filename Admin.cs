@@ -8,6 +8,7 @@ namespace BaboPlugin;
 public partial class BaboPlugin
 {
     private Dictionary<string, string> loadedAdmins = new();
+    private readonly HashSet<string> normalizedAdminSteamIds = new(StringComparer.Ordinal);
 
     private void LoadAdmins()
     {
@@ -34,6 +35,8 @@ public partial class BaboPlugin
                         loadedAdmins = new Dictionary<string, string>();
                     }
                 }
+
+                RebuildAdminSteamIdIndex();
 
                 foreach (var kvp in loadedAdmins)
                 {
@@ -81,13 +84,48 @@ public partial class BaboPlugin
     }
 
    
-     private bool IsAdmin(CCSPlayerController? player)
+    private bool IsAdmin(CCSPlayerController? player)
+    {
+        // Sent via server, hence should be treated as an admin.
+        if (player == null)
         {
-           
-            if (player == null) return true; // Sent via server, hence should be treated as an admin.
-            if (loadedAdmins.ContainsKey(player.SteamID.ToString())) return true; // Admin exists in admins.json of MatchZy
-            return false;
+            return true;
         }
+
+        var steamId = NormalizeSteamId(player.SteamID.ToString());
+        if (!string.IsNullOrEmpty(steamId) && normalizedAdminSteamIds.Contains(steamId))
+        {
+            return true;
+        }
+
+        var authorizedSteamId = NormalizeSteamId(player.AuthorizedSteamID?.ToString());
+        if (!string.IsNullOrEmpty(authorizedSteamId) && normalizedAdminSteamIds.Contains(authorizedSteamId))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private void RebuildAdminSteamIdIndex()
+    {
+        normalizedAdminSteamIds.Clear();
+        foreach (var (key, value) in loadedAdmins)
+        {
+            AddAdminSteamIdCandidate(key);
+            AddAdminSteamIdCandidate(value);
+        }
+    }
+
+    private void AddAdminSteamIdCandidate(string? candidate)
+    {
+        var normalized = NormalizeSteamId(candidate);
+        // SteamID64 is 17 digits. Keep this strict to avoid false positives from role values.
+        if (normalized.Length == 17)
+        {
+            normalizedAdminSteamIds.Add(normalized);
+        }
+    }
 
     private static string NormalizeSteamId(string? steamId)
     {
