@@ -109,6 +109,27 @@ public partial class BaboPlugin
             return;
         }
 
+        if (text.StartsWith(".bot_strafe", StringComparison.Ordinal))
+        {
+            var parts = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length != 2)
+            {
+                player.PrintToChat(" \x04[BaboPlugin]\x01 Usage: .bot_strafe <0|1>");
+                return;
+            }
+
+            if (parts[1] != "0" && parts[1] != "1")
+            {
+                player.PrintToChat(" \x04[BaboPlugin]\x01 Invalid value. Use 0 or 1.");
+                return;
+            }
+
+            Server.ExecuteCommand($"bot_strafe {parts[1]}");
+            player.PrintToChat($" \x04[BaboPlugin]\x01 bot_strafe set to {parts[1]}.");
+            AnnouncePracticeCommandUsage(player, $".bot_strafe {parts[1]}");
+            return;
+        }
+
         switch (text)
         {
             case ".bot_add_ct":

@@ -74,6 +74,7 @@ public partial class BaboPlugin
         RegisterChatCommand(".bot_add_t", OnBotAddTCommand);
         RegisterChatCommand(".bot_crouch", OnBotCrouchCommand);
         RegisterChatCommand(".bot_stand", OnBotStandCommand);
+        RegisterChatCommand(".bot_strafe", OnBotStrafeCommand);
         RegisterChatCommand(".rethrow", OnRethrowCommand);
 
         RegisterChatCommand(".record_smoke", OnRecordSmokeCommand);
@@ -379,6 +380,7 @@ public partial class BaboPlugin
     private void OnBotAddTCommand(CCSPlayerController? player, CommandInfo? info) => ExecutePracticeBotCommand(player, ".bot_add_t");
     private void OnBotCrouchCommand(CCSPlayerController? player, CommandInfo? info) => ExecutePracticeBotCommand(player, ".bot_crouch");
     private void OnBotStandCommand(CCSPlayerController? player, CommandInfo? info) => ExecutePracticeBotCommand(player, ".bot_stand");
+    private void OnBotStrafeCommand(CCSPlayerController? player, CommandInfo? info) => ExecutePracticeBotCommand(player, GetChatCommandText(info));
     private void OnRethrowCommand(CCSPlayerController? player, CommandInfo? info) => ExecutePracticeBotCommand(player, ".rethrow");
 
     private void OnRecordSmokeCommand(CCSPlayerController? player, CommandInfo? info)
