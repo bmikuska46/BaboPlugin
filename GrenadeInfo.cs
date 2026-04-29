@@ -74,11 +74,6 @@ public partial class BaboPlugin
                 continue;
             }
 
-            if (player.Connected != PlayerConnectedState.PlayerConnected)
-            {
-                continue;
-            }
-
             playerData[(int)player.UserId] = player;
         }
     }
